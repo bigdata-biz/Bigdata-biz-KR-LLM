@@ -39,9 +39,9 @@ def main():
 def answer_questions(question, vector_db_collection_name = 'cloudera_ml_docs'):
     vector_db_collection = Collection(name=vector_db_collection_name)
     vector_db_collection.load()
-
-    answer_with_context = answer_question_with_context(vector_db_collection, question, device)
+    
     answer_without_context = answer_question_without_context(question, device)
+    answer_with_context = answer_question_with_context(vector_db_collection, question, device)
     return answer_without_context, answer_with_context
 
 
@@ -95,6 +95,7 @@ def gen(x, model, tokenizer, device):
 
 def answer_question_with_context(vector_db_collection, question, device):
     context_chunk = get_nearest_chunk_from_vectordb(vector_db_collection, question)
+    vector_db_collection.release()
     return gen("문맥: " +context_chunk + "질문 : " + question 
             , model=llm_model
             , tokenizer=tokenizer
