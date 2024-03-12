@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModel
 
 # Load the model stored in models/embedding-model
 tokenizer = AutoTokenizer.from_pretrained('models/embedding-model', local_files_only=True)
-model = AutoModel.from_pretrained('models/embedding-model', local_files_only=True)
+model = AutoModel.from_pretrained('models/embedding-model', local_files_only=True, low_cpu_mem_usage=True)
 
 # Mean Pooling - Take attention mask into account for correct averaging
 def mean_pooling(model_output, attention_mask):
