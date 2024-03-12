@@ -5,12 +5,12 @@ import gradio
 
 from pymilvus import Collection
 import torch
-import utils.model_llm_utils as llm_model, tokenizer
+import utils.model_llm_utils as load_models
 import utils.model_embedding_utils as model_embedding
 import utils.vector_db_utils as vector_db
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+llm_model, tokenizer=load_models(device)
 def main():
     # Gradio 인터페이스 설정
     iface = gradio.Interface(
