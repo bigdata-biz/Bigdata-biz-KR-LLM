@@ -3,9 +3,8 @@
 EMBEDDING_MODEL_REPO="https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2"
 EMBDEDDING_MODEL_COMMIT="9e16800aed25dbd1a96dfa6949c68c4d81d5dded"
 
-LLM_MODEL_REPO="https://huggingface.co/h2oai/h2ogpt-oig-oasst1-512-6.9b"
-LLM_MODEL_COMMIT="4e336d947ee37d99f2af735d11c4a863c74f8541"
-
+LLM_MODEL_REPO="https://huggingface.co/kfkas/Llama-2-ko-7b-Chat"
+LLM_MODEL_COMMIT="e6b29e983cfdee9d289034ed28ac6b95f36e599a"
 
 download_lfs_files () {
     echo "These files must be downloaded manually since there is no git-lfs here:"

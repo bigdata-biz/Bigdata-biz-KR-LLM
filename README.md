@@ -56,7 +56,7 @@ For more detailed description of architectures like this and how it can enhance 
 This AMP creates the following workloads with resource requirements:
 - CML Session: `1 CPU, 4GB MEM`
 - CML Jobs: `1 CPU, 4GB MEM`
-- CML Application: `2 CPU, 1 GPU, 16GB MEM`
+- CML Application: `4 CPU, 1 GPU, 32GB MEM`
 
 #### External Resources
 This AMP requires pip packages and models from huggingface. Depending on your CML networking setup, you may need to whitelist some domains:
@@ -116,7 +116,7 @@ Definition of the application `CML LLM Chatbot`
 #### Open-Source Models and Utilities
 - [all-MiniLM-L12-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2/tree/9e16800aed25dbd1a96dfa6949c68c4d81d5dded)
      - Vector Embeddings Generation Model
-- [h2ogpt-oig-oasst1-512-6.9b](https://huggingface.co/h2oai/h2ogpt-oig-oasst1-512-6.9b/tree/4e336d947ee37d99f2af735d11c4a863c74f8541)
+- [Llama-2-ko-7b-Chat](https://huggingface.co/kfkas/Llama-2-ko-7b-Chat/tree/e6b29e983cfdee9d289034ed28ac6b95f36e599a)
    - Instruction-following Large Language Model
 - [Hugging Face transformers library](https://pypi.org/project/transformers/)
 #### Vector Database

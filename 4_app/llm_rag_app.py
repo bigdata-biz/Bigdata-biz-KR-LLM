@@ -1,61 +1,33 @@
-import os
-import gradio
+!ldconfig -v
 
-from milvus import default_server
-from pymilvus import connections, Collection
-import utils.model_llm_utils as model_llm
-import utils.vector_db_utils as vector_db
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import gradio as gr
+from pymilvus import Collection
 import utils.model_embedding_utils as model_embedding
+import utils.vector_db_utils as vector_db
 
+# 모델 및 토크나이저 로드
+model_id = "llm-model"
+model_path = f"./models/{model_id}"
+tokenizer_path = f"./models/{model_id}"
 
-def main():
-    # Configure gradio QA app 
-    print("Configuring gradio app")
-    demo = gradio.Interface(fn=get_responses, 
-                            inputs=gradio.Textbox(label="Question", placeholder=""),
-                            outputs=[gradio.Textbox(label="Asking LLM with No Context"),
-                                     gradio.Textbox(label="Asking LLM with Context (RAG)")],
-                            examples=["What are ML Runtimes?",
-                                      "What kinds of users use CML?",
-                                      "How do data scientists use CML?",
-                                      "What are iceberg tables?"],
-                            allow_flagging="never")
+model = AutoModelForCausalLM.from_pretrained(
+    model_path, device_map={"": 0}, torch_dtype=torch.float16, low_cpu_mem_usage=True
+)
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
+# Milvus Vector DB 컬렉션 로드
+vector_db_collection_name = 'cloudera_ml_docs'  # 사용할 벡터 DB 컬렉션 이름 지정
+vector_db_collection = Collection(name=vector_db_collection_name)
+vector_db_collection.load()
 
-    # Launch gradio app
-    print("Launching gradio app")
-    demo.launch(share=True,
-                enable_queue=True,
-                show_error=True,
-                server_name='127.0.0.1',
-                server_port=int(os.getenv('CDSW_APP_PORT')))
-    print("Gradio app ready")
-# Helper function for generating responses for the QA app
-def get_responses(question):
-    
-    # Load Milvus Vector DB collection
-    vector_db_collection = Collection('cloudera_ml_docs')
-    vector_db_collection.load()
-    
-    # Phase 1: Get nearest knowledge base chunk for a user question from a vector db
-    context_chunk = get_nearest_chunk_from_vectordb(vector_db_collection, question)
-    vector_db_collection.release()
-    
-    # Phase 2: Create enhanced instruction prompts for use with the LLM
-    prompt_with_context = create_enhanced_prompt(context_chunk, question)
-    prompt_without_context = create_enhanced_prompt("none", question)
-    
-    # Phase 3a: Perform text generation with LLM model using found kb context chunk
-    contextResponse = get_llm_response(prompt_with_context)
-    rag_response = contextResponse
-    
-    # Phase 3b: For comparison, also perform text generation with LLM model without providing context
-    plainResponse = get_llm_response(prompt_without_context)
-    plain_response = plainResponse
-
-    return plain_response, rag_response
-
-# Get embeddings for a user question and query Milvus vector DB for nearest knowledge base chunk
+def load_context_chunk_from_data(id_path):
+    with open(id_path, "r") as f: # Open file in read mode
+        return f.read()
+      
 def get_nearest_chunk_from_vectordb(vector_db_collection, question):
     # Generate embedding for user question
     question_embedding =  model_embedding.get_embeddings(question)
@@ -80,30 +52,51 @@ def get_nearest_chunk_from_vectordb(vector_db_collection, question):
     # Return text of the nearest knowledgebase chunk
     return load_context_chunk_from_data(nearest_vectors[0].ids[0])
   
-# Return the Knowledge Base doc based on Knowledge Base ID (relative file path)
-def load_context_chunk_from_data(id_path):
-    with open(id_path, "r") as f: # Open file in read mode
-        return f.read()
-      
-def create_enhanced_prompt(context, question):
-    prompt_template = """<human>:%s. Answer this question based on given context %s
-<bot>:"""
-    prompt = prompt_template % (context, question)
-    return prompt
   
-# Pass through user input to LLM model with enhanced prompt and stop tokens
-def get_llm_response(prompt):
-    stop_words = ['<human>:', '\n<bot>:']
+def gen(x, model, tokenizer, device):
+    prompt = (
+        f"아래는 작업을 설명하는 명령어입니다. 요청을 적절히 완료하는 응답을 작성하세요.\n\n### 명령어:\n{x}\n\n### 응답:"
+    )
+    len_prompt = len(prompt)
+    gened = model.generate(
+        **tokenizer(prompt, return_tensors="pt", return_token_type_ids=False).to(device),
+        max_new_tokens=1024,
+        early_stopping=True,
+        do_sample=True,
+        top_k=20,
+        top_p=0.92,
+        no_repeat_ngram_size=3,
+        eos_token_id=2,
+        repetition_penalty=1.2,
+        num_beams=3
+    )
+    return tokenizer.decode(gened[0])[len_prompt:]
 
-    generated_text = model_llm.get_llm_generation(prompt,
-                                                  stop_words,
-                                                  max_new_tokens=256,
-                                                  do_sample=False,
-                                                  temperature=0.7,
-                                                  top_p=0.85,
-                                                  top_k=70,
-                                                  repetition_penalty=1.07)
-    return generated_text  
+def answer_question_with_context(question):
+    context_chunk = get_nearest_chunk_from_vectordb(vector_db_collection, question)
+    return gen("문맥: " +context_chunk + "질문 : " + question , model=model, tokenizer=tokenizer, device=device)
+
+def answer_question_without_context(question):
+    return gen(question, model=model, tokenizer=tokenizer, device=device)
+
+def answer_questions(question):
+    # 질문에 대한 답변 생성 (문맥 포함 및 미포함)
+    answer_with_context = answer_question_with_context(question)
+    answer_without_context = answer_question_without_context(question)
+    return answer_without_context, answer_with_context
+
+# Gradio 인터페이스 설정
+iface = gr.Interface(
+    fn=answer_questions, 
+    inputs=gr.inputs.Textbox(lines=2, placeholder="여기에 질문을 입력하세요..."), 
+    outputs=["text", "text"],
+     examples=["ML Runtimes이 뭔가요?",
+                "어떤 유형의 사용자가 CML을 사용하나요?",
+                "데이터 과학자는 어떤 방식으로 CML을 사용하나요?",
+                "iceberg tables란?"],
+    title="질의응답 시스템",
+    description="첫 번째 출력은 Llama로 생성된 답변이고, 두 번째 출력은 벡터 DB에서 찾은 문맥을 바탕으로 생성된 답변입니다."
+)
 
 if __name__ == "__main__":
-    main()
+    iface.launch()
