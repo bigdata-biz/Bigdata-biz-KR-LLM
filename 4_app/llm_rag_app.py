@@ -5,7 +5,7 @@ import gradio
 
 from pymilvus import Collection
 import torch
-import utils.model_llm_utils as load_models
+from utils.model_llm_utils import load_models
 import utils.model_embedding_utils as model_embedding
 import utils.vector_db_utils as vector_db
 
@@ -29,10 +29,9 @@ def main():
     # Launch gradio app
     print("Launching gradio app")
     iface.launch(share=True,
-                enable_queue=True,
                 show_error=True,
                 server_name='127.0.0.1',
-                server_port=int(os.getenv('CDSW_APP_PORT')))
+                server_port=int(os.getenv('CDSW_READONLY_PORT')))
     print("Gradio app ready")
 
 
