@@ -1,4 +1,4 @@
-# !ldconfig -v
+!ldconfig -v
 
 import os
 import gradio
