@@ -40,8 +40,8 @@ def answer_questions(question, vector_db_collection_name = 'cloudera_ml_docs'):
     vector_db_collection = Collection(name=vector_db_collection_name)
     vector_db_collection.load()
 
-    answer_with_context = answer_question_with_context(question)
-    answer_without_context = answer_question_without_context(question)
+    answer_with_context = answer_question_with_context(vector_db_collection, question, device)
+    answer_without_context = answer_question_without_context(question, device)
     return answer_without_context, answer_with_context
 
 
