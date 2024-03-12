@@ -1,28 +1,50 @@
-!ldconfig -v
+# !ldconfig -v
 
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import gradio as gr
+import os
+import gradio
+
 from pymilvus import Collection
+import torch
+import utils.model_llm_utils as llm_model, tokenizer
 import utils.model_embedding_utils as model_embedding
 import utils.vector_db_utils as vector_db
 
-# 모델 및 토크나이저 로드
-model_id = "llm-model"
-model_path = f"./models/{model_id}"
-tokenizer_path = f"./models/{model_id}"
-
-model = AutoModelForCausalLM.from_pretrained(
-    model_path, device_map={"": 0}, torch_dtype=torch.float16, low_cpu_mem_usage=True
-)
-tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-model.to(device)
 
-# Milvus Vector DB 컬렉션 로드
-vector_db_collection_name = 'cloudera_ml_docs'  # 사용할 벡터 DB 컬렉션 이름 지정
-vector_db_collection = Collection(name=vector_db_collection_name)
-vector_db_collection.load()
+def main():
+    # Gradio 인터페이스 설정
+    iface = gradio.Interface(
+        fn=answer_questions, 
+        inputs=gradio.Textbox(lines=2, placeholder="여기에 질문을 입력하세요..."), 
+        outputs=[gradio.Textbox(label="Llama로 생성된 답변"),
+                 gradio.Textbox(label="벡터 DB에서 찾은 문맥을 바탕으로 생성된 답변")],
+         examples=["ML Runtimes이 뭔가요?",
+                    "어떤 유형의 사용자가 CML을 사용하나요?",
+                    "데이터 과학자는 어떤 방식으로 CML을 사용하나요?",
+                    "iceberg tables란?"],
+        title="질의응답 시스템",
+        description="첫 번째 출력은 Llama로 생성된 답변이고, 두 번째 출력은 벡터 DB에서 찾은 문맥을 바탕으로 생성된 답변입니다."
+    )
+
+    # Launch gradio app
+    print("Launching gradio app")
+    iface.launch(share=True,
+                enable_queue=True,
+                show_error=True,
+                server_name='127.0.0.1',
+                server_port=int(os.getenv('CDSW_APP_PORT')))
+    print("Gradio app ready")
+
+
+# Helper function for generating responses for the QA app
+def answer_questions(question, vector_db_collection_name = 'cloudera_ml_docs'):
+    vector_db_collection = Collection(name=vector_db_collection_name)
+    vector_db_collection.load()
+
+    answer_with_context = answer_question_with_context(question)
+    answer_without_context = answer_question_without_context(question)
+    return answer_without_context, answer_with_context
+
 
 def load_context_chunk_from_data(id_path):
     with open(id_path, "r") as f: # Open file in read mode
@@ -72,31 +94,18 @@ def gen(x, model, tokenizer, device):
     )
     return tokenizer.decode(gened[0])[len_prompt:]
 
-def answer_question_with_context(question):
+def answer_question_with_context(vector_db_collection, question, device):
     context_chunk = get_nearest_chunk_from_vectordb(vector_db_collection, question)
-    return gen("문맥: " +context_chunk + "질문 : " + question , model=model, tokenizer=tokenizer, device=device)
+    return gen("문맥: " +context_chunk + "질문 : " + question 
+            , model=llm_model
+            , tokenizer=tokenizer
+            , device=device)
 
-def answer_question_without_context(question):
-    return gen(question, model=model, tokenizer=tokenizer, device=device)
-
-def answer_questions(question):
-    # 질문에 대한 답변 생성 (문맥 포함 및 미포함)
-    answer_with_context = answer_question_with_context(question)
-    answer_without_context = answer_question_without_context(question)
-    return answer_without_context, answer_with_context
-
-# Gradio 인터페이스 설정
-iface = gr.Interface(
-    fn=answer_questions, 
-    inputs=gr.inputs.Textbox(lines=2, placeholder="여기에 질문을 입력하세요..."), 
-    outputs=["text", "text"],
-     examples=["ML Runtimes이 뭔가요?",
-                "어떤 유형의 사용자가 CML을 사용하나요?",
-                "데이터 과학자는 어떤 방식으로 CML을 사용하나요?",
-                "iceberg tables란?"],
-    title="질의응답 시스템",
-    description="첫 번째 출력은 Llama로 생성된 답변이고, 두 번째 출력은 벡터 DB에서 찾은 문맥을 바탕으로 생성된 답변입니다."
-)
+def answer_question_without_context(question, device):
+    return gen(question
+                , model=llm_model
+                , tokenizer=tokenizer
+                , device=device)
 
 if __name__ == "__main__":
-    iface.launch()
+    main()
