@@ -1,3 +1,3 @@
-Apache Ozone is a scalable, redundant, and distributed object store optimized for big data workloads. Apart from scaling to billions of objects of varying sizes, applications that use frameworks like Apache Spark, Apache YARN and Apache Hive work natively on Ozone object store without any modifications.
+Apache Ozone은 빅 데이터 워크로드에 최적화된 확장 가능하고 중복된 분산 개체 저장소입니다. 다양한 크기의 수십억 개의 개체로 확장하는 것 외에도 Apache Spark, Apache YARN 및 Apache Hive와 같은 프레임워크를 사용하는 애플리케이션은 수정 없이 기본적으로 Ozone 개체 저장소에서 작동합니다.
 
-HDFS works best when most of the files are large but HDFS suffers from small file limitations. Ozone is a distributed key-value object store that can manage both small and large files alike. Ozone natively supports the S3 API and provides a Hadoop-compatible file system interface. Ozone object store is available in a CDP Private Cloud Base deployment.
+HDFS는 대부분의 파일이 클 때 가장 잘 작동하지만 HDFS에는 작은 파일 제한이 있습니다. Ozone은 작은 파일과 큰 파일을 모두 관리할 수 있는 분산 키-값 개체 저장소입니다. Ozone은 기본적으로 S3 API를 지원하고 Hadoop 호환 파일 시스템 인터페이스를 제공합니다. Ozone 개체 저장소는 CDP Private Cloud Base 배포에서 사용할 수 있습니다.

@@ -1,10 +1,10 @@
-Apache Iceberg is an open table format for huge analytic datasets. Iceberg adds tables to compute engines including Spark, Trino, PrestoDB, Flink, Hive and Impala using a high-performance table format that works just like a SQL table.
+Apache Iceberg는 대규모 분석 데이터 세트를 위한 개방형 테이블 형식입니다. Iceberg는 SQL 테이블처럼 작동하는 고성능 테이블 형식을 사용하여 Spark, Trino, PrestoDB, Flink, Hive 및 Impala를 포함한 컴퓨팅 엔진에 테이블을 추가합니다.
 
-User experience
-Iceberg avoids unpleasant surprises. Schema evolution works and won't inadvertently un-delete data. Users don't need to know about partitioning to get fast queries.
+사용자 경험
+빙산은 불쾌한 놀라움을 피합니다. 스키마 진화는 작동하며 실수로 데이터 삭제를 취소하지 않습니다. 사용자는 빠른 쿼리를 얻기 위해 분할에 대해 알 필요가 없습니다.
 
-Schema evolution supports add, drop, update, or rename, and has no side-effects
-Hidden partitioning prevents user mistakes that cause silently incorrect results or extremely slow queries
-Partition layout evolution can update the layout of a table as data volume or query patterns change
-Time travel enables reproducible queries that use exactly the same table snapshot, or lets users easily examine changes
-Version rollback allows users to quickly correct problems by resetting tables to a good state
+스키마 진화는 추가, 삭제, 업데이트 또는 이름 바꾸기를 지원하며 부작용이 없습니다.
+숨겨진 파티셔닝은 자동으로 잘못된 결과 또는 매우 느린 쿼리를 유발하는 사용자 실수를 방지합니다.
+파티션 레이아웃 발전을 통해 데이터 볼륨이나 쿼리 패턴 변경에 따라 테이블 레이아웃을 업데이트할 수 있습니다.
+시간 이동을 통해 정확히 동일한 테이블 스냅샷을 사용하는 재현 가능한 쿼리를 사용하거나 사용자가 변경 사항을 쉽게 검사할 수 있습니다.
+버전 롤백을 통해 사용자는 테이블을 양호한 상태로 재설정하여 문제를 신속하게 수정할 수 있습니다.
